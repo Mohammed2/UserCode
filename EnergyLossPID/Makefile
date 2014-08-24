@@ -18,8 +18,9 @@ run ::
 
 tagFiles ::
 ifdef tag
-	 cd data; cp gain_1.dat     gain_$(tag).dat
+	 cd data; cp gain_1.dat           gain_$(tag).dat
 	 cd data; cp stripProps.par stripProps_$(tag).par
+	 cp out/mostprob_2.dat   data/mostprob_$(tag).dat
 else
 	 @ echo "Error: tag is empty; please use 'make tagFiles tag=<string>'"
 endif
