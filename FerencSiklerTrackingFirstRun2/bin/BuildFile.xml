@@ -1,0 +1,7 @@
+<use name="boost"/>
+<use name="root"/>
+<use name="clhep"/>
+<use name="FWCore/Framework"/>
+<use name="UserCode/FerencSiklerTrackingFirstRun2"/>
+
+<bin file="processSimu.cc" name="processSimu"></bin>

@@ -1,0 +1,51 @@
+#ifndef _HadronSpectra_PlotRecTracks_h_
+#define _HadronSpectra_PlotRecTracks_h_
+
+#include <fstream>
+#include <vector>
+
+namespace edm { class Event; class EventSetup; }
+class TrackingRecHit;
+class TrackerGeometry;
+class TrackerHitAssociator;
+class FreeTrajectoryState;
+class MagneticField;
+class Propagator;
+
+class TrajectoryFitter;
+
+namespace reco { class Track; }
+
+class PlotRecTracks
+{
+  public:
+    explicit PlotRecTracks(const edm::EventSetup& es_,
+                           std::string trackProducer_,
+                           bool hasSimInfo_,
+                           std::ofstream& file_);
+    ~PlotRecTracks();
+    void printRecTracks(const edm::Event& ev);
+
+  private:
+    std::string getPixelInfo(const TrackingRecHit* recHit,
+                             const std::ostringstream& o,
+                             const std::ostringstream& d);
+    std::string getStripInfo(const TrackingRecHit* recHit,
+                             const std::ostringstream& o,
+                             const std::ostringstream& d);
+    FreeTrajectoryState getTrajectoryAtOuterPoint(const reco::Track& track);
+
+    const edm::EventSetup& es;
+    std::string trackProducer;
+    bool hasSimInfo;
+    std::ofstream& file;
+
+    const TrackerGeometry* theTracker;
+    const MagneticField* theMagField;
+    const Propagator*  thePropagator;
+    const TrajectoryFitter* theFitter;
+
+    TrackerHitAssociator * theHitAssociator;
+};
+
+#endif
