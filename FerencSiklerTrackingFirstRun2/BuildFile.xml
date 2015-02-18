@@ -1,0 +1,13 @@
+<use name="TrackingTools/PatternTools"/>
+<use name="Geometry/TrackerGeometryBuilder"/>
+<use name="Geometry/CaloGeometry"/>
+<use name="SimDataFormats/GeneratorProducts"/>
+<use name="SimTracker/TrackerHitAssociation"/>
+<use name="SimDataFormats/TrackingAnalysis"/>
+<use name="RecoPixelVertexing/PixelLowPtUtilities"/>
+<use name="CalibTracker/SiPixelESProducers"/>
+<use name="boost"/>
+<use name="rootrflx"/>
+<export>
+  <lib name="1"/>
+</export>

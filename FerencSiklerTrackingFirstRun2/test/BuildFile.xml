@@ -1,0 +1,13 @@
+<use name="boost"/>
+<use name="root"/>
+<use name="clhep"/>
+<use name="FWCore/Framework"/>
+<use name="UserCode/FerencSiklerTrackingFirstRun2"/>
+<library file="UDstProducer.cc" name="UDstProducer">
+  <use name="DataFormats/L1GlobalTrigger"/>
+  <use name="L1Trigger/GlobalTriggerAnalyzer"/>
+  <flags EDM_PLUGIN="1"/>
+</library>
+<library file="HadronPlotter.cc" name="HadronPlotter">
+  <flags EDM_PLUGIN="1"/>
+</library>
