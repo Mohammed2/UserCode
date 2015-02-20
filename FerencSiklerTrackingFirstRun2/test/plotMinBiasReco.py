@@ -45,13 +45,13 @@ process.source = cms.Source("PoolSource",
        'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
     ),
     inputCommands = cms.untracked.vstring(
-        'keep *',
-        'drop *_mix_MergedTrackTruth_HLT'
+       'keep *',
+       'drop *_mix_MergedTrackTruth_HLT'
     )
 )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(1000)
 )
 
 ###############################################################################
@@ -107,7 +107,7 @@ process.load("RecoPixelVertexing.PixelLowPtUtilities.MinBiasTracking_cff")
 
 # Provide new shape files (all hits for pixels, only clear hits for strips)
 from RecoPixelVertexing.PixelLowPtUtilities.ClusterShapeHitFilterESProducer_cfi import *
-ClusterShapeHitFilterESProducer.PixelShapeFile = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/pixelShape_simHitge1.par')
+ClusterShapeHitFilterESProducer.PixelShapeFile = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/pixelShape_simHiteq1.par')
 ClusterShapeHitFilterESProducer.StripShapeFile = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/stripShape_simHiteq1.par')
 
 # Global reco
@@ -126,6 +126,7 @@ process.tpClusterProducer.trackingParticleSrc = cms.InputTag('mix', '')
 process.load("SimTracker.TrackAssociation.trackingParticleRecoTrackAsssociation_cfi")
 process.tpRecoAssocGeneralTracks = process.trackingParticleRecoTrackAsssociation.clone()
 process.tpRecoAssocGeneralTracks.label_tr = cms.InputTag("allTracks")
+process.tpRecoAssocGeneralTracks.label_tp = cms.InputTag("mix","")
 
 process.load("SimTracker.TrackAssociation.quickTrackAssociatorByHits_cfi")
 process.quickTrackAssociatorByHits.SimToRecoDenominator = cms.string('reco')

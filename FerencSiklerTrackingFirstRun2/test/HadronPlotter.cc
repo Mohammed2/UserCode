@@ -50,7 +50,6 @@ class HadronPlotter : public edm::EDAnalyzer
 HadronPlotter::HadronPlotter(const edm::ParameterSet& ps)
 {
   hasSimInfo    = ps.getParameter<bool>("hasSimInfo");
-
   trackProducer = ps.getParameter<string>("trackProducer");
 }
 
@@ -184,7 +183,6 @@ void HadronPlotter::analyze(const edm::Event& ev, const edm::EventSetup& es)
   system("zip -q -m event.zip event.m ; mv event.zip ../data");
 
   edm::LogVerbatim("MinBiasTracking") << "[HadronPlotter] event plotted";
-  cerr << "[HadronPlotter] event plotted" << endl;
 
   while(getchar() == 0);
 } 
