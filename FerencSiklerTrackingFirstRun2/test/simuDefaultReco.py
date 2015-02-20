@@ -4,19 +4,19 @@ process = cms.Process("DefaultReconstruction")
 
 process.load("Configuration.StandardSequences.Services_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.load("SimGeneral.MixingModule.mixNoPU_cfi")
-process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_cff')
-process.load('Configuration.StandardSequences.RawToDigi_cff')
-process.load('Configuration.StandardSequences.Reconstruction_cff')
-process.load('Configuration.StandardSequences.EndOfProcess_cff')
+process.load("Configuration.StandardSequences.GeometryDB_cff")
+process.load("Configuration.StandardSequences.MagneticField_cff")
+process.load("Configuration.StandardSequences.RawToDigi_cff")
+process.load("Configuration.StandardSequences.Reconstruction_cff")
+process.load("Configuration.StandardSequences.EndOfProcess_cff")
 
 ###############################################################################
 # Message logger
+process.load("FWCore.MessageLogger.MessageLogger_cfi")
+
 process.MessageLogger = cms.Service("MessageLogger",
     categories = cms.untracked.vstring(
-      'pixel3Vertices', 'NewVertices', 'UDstProducer'
+      'UDstProducer'
     ),
     debugModules = cms.untracked.vstring('*'),
     cerr = cms.untracked.PSet(
@@ -51,7 +51,7 @@ process.source = cms.Source("PoolSource",
 )
 
 process.maxEvents = cms.untracked.PSet(
-   input = cms.untracked.int32(5000)
+    input = cms.untracked.int32(10)
 )
 
 ###############################################################################
@@ -64,37 +64,31 @@ process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
 
 ###############################################################################
 # Paths
+
+# Mixing
+process.load("SimGeneral.MixingModule.mixNoPU_cfi")
 from SimGeneral.MixingModule.digitizers_cfi import *
 process.mix.digitizers = cms.PSet(theDigitizersValid)
 process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.01)
 process.mix.playback = cms.untracked.bool(True)
 
 process.gsimu = cms.Path(process.mix)
-
 process.raw2digi_step = cms.Path(process.RawToDigi)
 process.reconstruction_step = cms.Path(process.reconstruction)
+
+# Postprocessing, association
+process.load("SimTracker.TrackerHitAssociation.clusterTpAssociationProducer_cfi")
+process.tpClusterProducer.trackingParticleSrc = cms.InputTag('mix', '')
 
 process.load("SimTracker.TrackAssociation.trackingParticleRecoTrackAsssociation_cfi")
 process.tpRecoAssocGeneralTracks = process.trackingParticleRecoTrackAsssociation.clone()
 process.tpRecoAssocGeneralTracks.label_tr = cms.InputTag("generalTracks")
-
 process.tpRecoAssocGeneralTracks.label_tp = cms.InputTag("mix","")
 
 process.load("SimTracker.TrackAssociation.quickTrackAssociatorByHits_cfi")
-
-# Take reco as denominator
 process.quickTrackAssociatorByHits.SimToRecoDenominator = cms.string('reco')
-
-# shared hits /  rectrack hits
-process.quickTrackAssociatorByHits.Cut_RecoToSim = cms.double(0.50) #was 0.75
-
-# shared hits /  rectrack hits
+process.quickTrackAssociatorByHits.Cut_RecoToSim    = cms.double(0.50) #was 0.75
 process.quickTrackAssociatorByHits.Purity_SimToReco = cms.double(0.50) #was 0.75
-
-process.quickTrackAssociatorByHits.associateStrip = cms.bool(False)
-
-process.load("SimTracker.TrackerHitAssociation.clusterTpAssociationProducer_cfi")
-process.tpClusterProducer.trackingParticleSrc = cms.InputTag('mix', '')
 
 process.postp = cms.Path(process.tpClusterProducer
                        * process.tpRecoAssocGeneralTracks

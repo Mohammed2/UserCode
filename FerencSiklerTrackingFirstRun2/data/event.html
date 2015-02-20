@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+
+
+<html>
+
+<head>
+<link rel="shortcut icon" href="cms.ico">
+<title>Event viewer</title>
+
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<script type="text/javascript">
+
+function parseZshift(zshift)
+{
+  LiveApplet = document.getElementById("liveApplet");
+  LiveApplet.setVariable("zs", zshift);
+}
+
+function parseForm(theForm)
+{
+  LiveApplet = document.getElementById("liveApplet");
+
+  if(theForm.mz.checked) LiveApplet.setVariable("mz",0.5);
+                    else LiveApplet.setVariable("mz",1.0);
+
+  if(theForm.sd.checked) LiveApplet.setVariable("sd",1);
+                    else LiveApplet.setVariable("sd",0);
+
+  if(theForm.pr.checked) LiveApplet.setVariable("pr",1);
+                    else LiveApplet.setVariable("pr",0);
+
+  if(theForm.sr.checked) LiveApplet.setVariable("sr",1);
+                    else LiveApplet.setVariable("sr",0);
+
+  if(theForm.rt.checked) LiveApplet.setVariable("rt",1);
+                    else LiveApplet.setVariable("rt",0);
+
+  if(theForm.st.checked) LiveApplet.setVariable("st",1);
+                    else LiveApplet.setVariable("st",0);
+}
+
+</script>
+
+<script type="text/javascript" src="SimpleSlider.js"></script>
+
+</head>
+
+<!---------------------------------------------------------------------------->
+<!--body onLoad="window.resizeTo(1250,775);-->
+<body onLoad="window.resizeTo(1400,700);
+              document.getElementById('theForm').reset();
+              parseForm(document.getElementById('theForm'));">
+
+<table>
+<tr>
+<td valign=top>
+<applet id="liveApplet" name="liveApplet"
+        code="Live.class" width=1200 height=600>
+ <param name="cache_archive" value="live.jar">
+ <param name="INDEPENDENT_VARIABLES" value="{mz->0.5,pr->1,sr->0,sd->1,rt->1,st->1,zs->0}">
+ <param name="MAGNIFICATION" VALUE="2.">
+ <param name="INITIAL_ROTATION" VALUE="90,90">
+ <param name="INPUT_FILE"    value="event.m">
+ <param name="INPUT_ARCHIVE" value="event.zip">
+ <param name="permissions" value="sandbox">
+</applet>
+</td>
+
+<td valign=top>
+<form id="theForm" action="">
+ <font face="Arial,Helvetica" size="-1">
+ <input type="checkbox" name="mz" checked
+  onclick="parseForm(this.form);"> Compress z<br>
+  Shift z = <span id="slider1_label">0</span> cm
+ </font>
+  <div id="slider1"></div>
+  <script type="text/javascript">
+   var myslider = new Slider("slider1", 100, 10, "white", "silver");
+   myslider.setPosition(0.47);
+   myslider.onNewPosition = function()
+   { zs = parseInt((myslider.position - 0.47)/0.47 * 200);
+     parseZshift(zs);
+     document.getElementById("slider1_label").innerHTML = zs; }
+  </script>
+ <hr>
+ <font face="Arial,Helvetica" size="-1">
+ <input type="checkbox" name="rt" checked
+  onclick="parseForm(this.form);"> <font color="red">  RecTracks </font> <br>
+ <input type="checkbox" name="st" checked
+  onclick="parseForm(this.form);"> <font color="gray"> SimTracks </font> <br>
+ <input type="checkbox" name="sd" checked
+  onclick="parseForm(this.form);"> <font color="gray"> DetUnits  </font> <br>
+ </font>
+ <hr>
+ <font face="Arial,Helvetica" size="-1">
+ <input type="checkbox" name="pr" checked
+  onclick="parseForm(this.form);"> <font color="#6666ff"> PixelRechits </font> <br>
+ <input type="checkbox" name="sr"
+  onclick="parseForm(this.form);"> <font color="#9999ff"> StripRechits </font> <br>
+ </font>
+</form>
+
+</td> </tr> </table>
+
+<table width="100%"><tr>
+
+<td align="left">
+<font face="Arial,Helvetica" size="-1" color="gray">
+Ferenc Sikl&eacute;r, powered by
+<a href="http://www.vis.uni-stuttgart.de/~kraus/LiveGraphics3D/documentation.html#subsection:%20User-Quick" target="_blank">LiveGraphics3D</a>
+<img src=livetiny.gif alt="LiveGraphics3D"> |
+mouse drag: rotate | mouse release: spin | Shift + mouse vert: zoom | Shift +
+mouse horiz: rotate perp | 's': stereo | 'Home'
+</font>
+</td>
+
+<td align="right">
+<a href="http://validator.w3.org/check?uri=referer"><img src="valid-html401.png" alt="Valid HTML 4.01 Transitional" height="15" width="44"></a>
+</td>
+
+</tr></table>
+
+</body>
+
+</html>

@@ -42,6 +42,8 @@
 using namespace std;
 using namespace reco;
 
+#undef Debug
+
 /*****************************************************************************/
 class UDstProducer : public edm::EDAnalyzer
 {
@@ -114,7 +116,6 @@ void UDstProducer::beginJob()
 /*****************************************************************************/
 void UDstProducer::endJob()
 {
-//  tree->Print();
   file->Write();
   file->Close();
 }
@@ -153,14 +154,12 @@ bool UDstProducer::isPrimary(const Track & recTrack, const Vertex & vertex)
   double dt = fabs(recTrack.dxy(theBeamSpot->position()) /
                    recTrack.dxyError());
 
-  // Relative longitudinal impact parameter (5*sigma)
+  // Relative longitudinal impact parameter
   double dz = fabs( (recTrack.dz(theBeamSpot->position())
                                + theBeamSpot->position().z()
                                      - vertex.position().z())) /
                   sqrt(recTrack.dzError()*recTrack.dzError() +
                           vertex.zError()*   vertex.zError());
-
-cerr << "   dt=" << dt << " dz=" << dz << endl;
 
   return (dt < 3 && dz < 3);
 }
@@ -168,13 +167,7 @@ cerr << "   dt=" << dt << " dz=" << dz << endl;
 /*****************************************************************************/
 bool UDstProducer::isAmongGoodTracks(const edm::RefToBase<Track> & recTrack)
 {
-  if(recTrackMap.count(recTrack.key()) > 0)
-  {
-//    int iv = recTrackMap[recTrack.key()].first;
-//    int it = recTrackMap[recTrack.key()].second;
-    return true;
-  }
-  else return false;
+  return (recTrackMap.count(recTrack.key()) > 0);
 }
 
 /*****************************************************************************/
@@ -189,7 +182,6 @@ void UDstProducer::processSimTracks(const edm::Event& ev)
   LogTrace("UDstProducer") << " [UDstProducer] processId = " << proc;
 
   edm::Handle<TrackingVertexCollection>  simVertexCollection;
-//  ev.getByLabel("mix","MergedTrackTruth",simVertexCollection);
   ev.getByLabel("mix","",simVertexCollection);
   const TrackingVertexCollection * vertices =
                                          simVertexCollection.product();
@@ -249,35 +241,36 @@ void UDstProducer::processSimTracks(const edm::Event& ev)
       }
 
 
-      if((*simTrack)->charge() != 0 && fabs((*simTrack)->eta()) < 2.8)
-      if(s.isPrimary)
-      if(s.nAssoc == 0)
+#ifdef Debug
+      if(s.isPrimary && s.charge() != 0 && fabs(s.eta) < 2.8)
       {
-      cerr << "\033[22;33m" << " SimTrack "
-           << int(simTrack - vertex->daughterTracks_begin()) << " no reco |"
-           << " q=" << (*simTrack)->charge()
-           << " eta=" << (*simTrack)->eta() << " pt=" << (*simTrack)->pt()
-           << " vtx=(" << (*simTrack)->vertex().x()
-                << "," << (*simTrack)->vertex().y()
-               << ","  << (*simTrack)->vertex().z() << ")"
-           << " " << (*simTrack)->numberOfTrackerHits()
-           << " " << (*simTrack)->numberOfTrackerLayers()
-           << " " << (*simTrack)->longLived()
-           << " " << (*simTrack)->status()
-           << " " << (*simTrack)->pdgId()
-           << "\033[22;0m" << endl;
-      } 
+        if(s.nAssoc == 0)
+        {
+        cerr << "\033[22;33m" << " SimTrack "
+             << int(simTrack - vertex->daughterTracks_begin()) << " no reco |"
+             << " q=" << (*simTrack)->charge()
+             << " eta=" << (*simTrack)->eta() << " pt=" << (*simTrack)->pt()
+             << " vtx=(" << (*simTrack)->vertex().x()
+                  << "," << (*simTrack)->vertex().y()
+                 << ","  << (*simTrack)->vertex().z() << ")"
+             << " " << (*simTrack)->numberOfTrackerHits()
+             << " " << (*simTrack)->numberOfTrackerLayers()
+             << " " << (*simTrack)->longLived()
+             << " " << (*simTrack)->status()
+             << " " << (*simTrack)->pdgId()
+             << "\033[22;0m" << endl;
+        } 
 
-      if(s.nAssoc >= 2)
-      if(s.isPrimary)
-      {
-      cerr << "\033[22;34m" << " SimTrack "
-           << int(simTrack - vertex->daughterTracks_begin()) << " multipl |"
-           << " q=" << (*simTrack)->charge()
-           << " eta=" << (*simTrack)->eta() << " pt=" << (*simTrack)->pt()
-           << "\033[22;0m" << endl;
+        if(s.nAssoc >= 2)
+        {
+          cerr << "\033[22;34m" << " SimTrack "
+               << int(simTrack - vertex->daughterTracks_begin()) << " multipl |"
+               << " q=" << (*simTrack)->charge()
+               << " eta=" << (*simTrack)->eta() << " pt=" << (*simTrack)->pt()
+               << "\033[22;0m" << endl;
+        }
       }
-
+#endif
 
       // Store track 
       simVertex.tracks.push_back(s);
@@ -298,6 +291,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev)
   ev.getByLabel("tpRecoAssocGeneralTracks",recToSimCollectionH);
   RecoToSimCollection recToSim = *(recToSimCollectionH.product());
 
+#ifdef Debug
   // For printing fakes
   // rec
   {
@@ -308,13 +302,11 @@ void UDstProducer::processRecTracks(const edm::Event& ev)
   for(reco::TrackCollection::const_iterator recTrack = recTracks->begin();
                                             recTrack!= recTracks->end();
                                             recTrack++)
-  {
-      cerr << "\033[22;35m" << " RecTrack "
-           << int(recTrack - recTracks->begin())
-           << " q=" << (*recTrack).charge()
-           << " eta=" << (*recTrack).eta() << " pt=" << (*recTrack).pt()
-           << "\033[22;0m" << endl;
-  } 
+    cerr << "\033[22;35m" << " RecTrack "
+         << int(recTrack - recTracks->begin())
+         << " q=" << (*recTrack).charge()
+         << " eta=" << (*recTrack).eta() << " pt=" << (*recTrack).pt()
+         << "\033[22;0m" << endl;
  
   edm::Handle<edm::View<Track> > recCollection;
   ev.getByLabel(allTracks,       recCollection);
@@ -333,7 +325,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev)
   } 
   }
   //
-
+#endif
 
   edm::Handle<VertexCollection> recVertexCollection;
   ev.getByLabel(allVertices,    recVertexCollection);
@@ -343,16 +335,12 @@ void UDstProducer::processRecTracks(const edm::Event& ev)
   LogTrace("UDstProducer")
       << " [UDstProducer] recVertices = " << recVertices->size();
 
-  // Find reconstructed vertex with highest multiplicity
-  if(recVertices->size() <= 2) // FIXME
   for(VertexCollection::const_iterator vertex = recVertices->begin();
                                        vertex!= recVertices->end();
                                        vertex++)
   {
     TVertex recVertex;
     recVertex.z = vertex->position().z();
-
-cerr << "  vertex = " << int(vertex - recVertices->begin()) + 1 << endl;
 
     // Go through rectracks
     for(Vertex::trackRef_iterator recTrack = vertex->tracks_begin();
@@ -363,8 +351,6 @@ cerr << "  vertex = " << int(vertex - recVertices->begin()) + 1 << endl;
       TTrack r;
 
       // rec
-cerr << " eta=" << (*recTrack)->eta() << " pt=" << (*recTrack)->pt();
-
       r.isPrimary  = isPrimary(**recTrack, *vertex);
 
       switch((*recTrack)->algo())
@@ -402,13 +388,10 @@ cerr << " eta=" << (*recTrack)->eta() << " pt=" << (*recTrack)->pt();
         r.nAssoc = 0;
       }
 
-//      if(r.algo != 3 || r.nTrackerHits >= 4) // FIXME
-      {
-        recTrackMap[(*recTrack).key()] = 1;
+      recTrackMap[(*recTrack).key()] = 1;
 
-        // Store track 
-        recVertex.tracks.push_back(r);
-      }
+      // Store track 
+      recVertex.tracks.push_back(r);
     }
 
     // Store vertex
@@ -421,7 +404,7 @@ void UDstProducer::processVertices(const edm::Event& ev)
 {
   recTrackMap.clear();
 
-  // Process recvertices, recTracks 
+  // Process recvertices, recTracks FIXME
 //  if(bunchCrossing->hfTowers.first  > 0 &&
 //     bunchCrossing->hfTowers.second > 0) 
     processRecTracks(ev);
@@ -506,9 +489,9 @@ void UDstProducer::processEventRelated(const edm::Event& ev)
 void UDstProducer::analyze
   (const edm::Event& ev, const edm::EventSetup& es)
 {
-  // Analyze
+  // Analyze FIXME
 //  processTrigger(ev);
-//  processHadronForward(ev); // FIXME
+//  processHadronForward(ev);
   processEventRelated(ev);
   processVertices(ev);
 
