@@ -378,6 +378,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev)
       {
         r.nAssoc = recToSim[*recTrack].size();
       }
+#ifdef Debug
       else
       {
         cerr << "\033[22;31m" << " RecTrack "
@@ -387,6 +388,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev)
              << "\033[22;0m" << endl;
         r.nAssoc = 0;
       }
+#endif
 
       recTrackMap[(*recTrack).key()] = 1;
 
