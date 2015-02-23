@@ -165,7 +165,7 @@ bool UDstProducer::isPrimary(const Track & recTrack, const Vertex & vertex)
 
   double sz = sqrt(sqr(recTrack.dzError()) + sqr(vertex.zError()));
 
-  return (dt < 0.2 && dz < 0.4 &&   // cm
+  return (dt < 0.3 && dz < 0.6 &&   // cm
           dt/st < 3 && dz/sz < 3);  // in sigma
 }
 
