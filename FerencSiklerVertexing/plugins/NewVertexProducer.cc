@@ -37,6 +37,8 @@ NewVertexProducer::NewVertexProducer
   produces<reco::VertexCollection>();
 
   thePtMin   = theConfig.getParameter<double>("PtMin");
+
+  d0Max      = theConfig.getParameter<double>("d0Max");
   nSigma     = theConfig.getParameter<double>("nSigma");
 
   theMethod  = theConfig.getParameter<int>("Method");
@@ -47,7 +49,6 @@ NewVertexProducer::NewVertexProducer
   theTrackMin = (unsigned int)theConfig.getParameter<int>("TrackMin");
 
    LogTrace("NewVertices")
-  //cerr
             << " [NewVertices] method = " << theMethod;
 }
 
@@ -123,7 +124,6 @@ void NewVertexProducer::produce
   const reco::BeamSpot * theBeamSpot = beamSpotHandle.product();
 
    LogTrace("NewVertices")
-  //cerr
     << " [NewVertices] beamSpot at " << theBeamSpot->position() << endl;
 
   // Get tracks
@@ -149,7 +149,7 @@ void NewVertexProducer::produce
       double st = sqrt(sqr(recTracks[i].dxyError()) +
                        sqr(theBeamSpot->BeamWidthX()));
 
-      if(dt < nSigma * st)
+      if(dt < d0Max && dt < nSigma * st)
       {
         // z wrt beam spot
         pair<double,double> point;
@@ -175,7 +175,6 @@ void NewVertexProducer::produce
       }
       else
          LogTrace("NewVertices")
-         //cerr
             << " [NewVertices] not seleted track #" << i
             << " | dt/st = " << dt << " " << st << endl;
 
@@ -186,7 +185,6 @@ void NewVertexProducer::produce
 #endif
 
   LogTrace("NewVertices")
-  //cerr
             << " [NewVertices] selected tracks: "
             << points.size() << " (out of " << recTracks.size()
             << ")"; 
@@ -237,7 +235,6 @@ void NewVertexProducer::produce
     if(vertex->second.size() >= 1)
     {
       LogTrace("NewVertices")
-      //cerr
         << " [NewVertices]  vertex with "
         << vertex->second.size() << " tracks, at "
         << vertex->first.first << " +/- "
@@ -272,7 +269,6 @@ void NewVertexProducer::produce
       // Is it a looper?
       if(vertex->second.size() == 2 && sum_q == 0 && sum_p.R() < 0.050)
        LogTrace("NewVertices")
-      //cerr
           << " [NewVertices]  looper, sum_p = " << sum_p.R() * 1e+3 << " MeV/c";
       else 
       {
@@ -284,7 +280,6 @@ void NewVertexProducer::produce
     }
 
     LogTrace("NewVertices")
-    //cerr
       << " [NewVertices] found vertices: " << vertices->size();
   }
   ev.put(vertices);

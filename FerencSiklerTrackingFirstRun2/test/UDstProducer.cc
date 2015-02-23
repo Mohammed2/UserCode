@@ -39,10 +39,13 @@
 #include "TTree.h"
 
 #include <fstream>
-using namespace std;
-using namespace reco;
 
 #undef Debug
+
+#define sqr(x) ((x) * (x))
+
+using namespace std;
+using namespace reco;
 
 /*****************************************************************************/
 class UDstProducer : public edm::EDAnalyzer
@@ -151,17 +154,19 @@ bool UDstProducer::isPrimary(const TrackingParticleRef & simTrack)
 bool UDstProducer::isPrimary(const Track & recTrack, const Vertex & vertex)
 {
   // Relative transverse impact parameter
-  double dt = fabs(recTrack.dxy(theBeamSpot->position()) /
-                   recTrack.dxyError());
+  double dt = fabs(recTrack.dxy(theBeamSpot->position()));
+
+  double st = recTrack.dxyError();
 
   // Relative longitudinal impact parameter
   double dz = fabs( (recTrack.dz(theBeamSpot->position())
                                + theBeamSpot->position().z()
-                                     - vertex.position().z())) /
-                  sqrt(recTrack.dzError()*recTrack.dzError() +
-                          vertex.zError()*   vertex.zError());
+                                     - vertex.position().z()) );
 
-  return (dt < 3 && dz < 3);
+  double sz = sqrt(sqr(recTrack.dzError()) + sqr(vertex.zError()));
+
+  return (dt < 0.2 && dz < 0.4 &&   // cm
+          dt/st < 3 && dz/sz < 3);  // in sigma
 }
 
 /*****************************************************************************/

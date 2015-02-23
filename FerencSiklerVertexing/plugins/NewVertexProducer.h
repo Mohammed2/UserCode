@@ -32,6 +32,8 @@ private:
   edm::ParameterSet theConfig;
 
   double thePtMin;
+
+  double d0Max;
   double nSigma;
 
   int    theMethod;
