@@ -4,8 +4,8 @@
 #include <utility>
 #include "TObject.h"
 
-#include "TPixelHit.h"
-#include "TStripHit.h"
+//#include "TPixelHit.h"
+//#include "TStripHit.h"
 
 class TTrack : public TObject
 {
@@ -25,18 +25,15 @@ class TTrack : public TObject
   short int ndf;
 
 //  std::pair<float,float> epsilon;
-
 //  std::vector<TPixelHit> pixelHits;
 //  std::vector<TStripHit> stripHits;
-  int nTrackerHits;
+  short int nTrackerHits;
 
   bool isPrimary;
 
-  short int nAssoc;
-
-  // associated track sim <-> rec, vertex and track no
-//  typedef std::pair<short int,short int> aTrack_t;
-//  aTrack_t aTrack;
+  // associated tracks
+  typedef std::pair<short int,short int> aTrack_t;
+  std::vector<aTrack_t> aTracks;
 
   short int pdgId;
   short int parentId;

@@ -6,7 +6,6 @@
 #include <string>
 
 class TVertex;
-class TPixelVertex;
 
 class TBunchCrossing : public TObject
 {

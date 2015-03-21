@@ -40,9 +40,10 @@ process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-       'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
-       'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
-       'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
+       'file:///afs/cern.ch/user/a/azsigmon/public/EventContent/MinBias_TuneMonash13_13TeV_pythia8_step2_FEVTDEBUG.root'
+#      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
+#      'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
+#      'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
     ),
     inputCommands = cms.untracked.vstring(
        'keep *',
@@ -75,7 +76,7 @@ process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
 process.load("SimGeneral.MixingModule.mixNoPU_cfi")
 from SimGeneral.MixingModule.digitizers_cfi import *
 process.mix.digitizers = cms.PSet(theDigitizersValid)
-process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.01)
+process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.001)
 process.mix.playback = cms.untracked.bool(True)
 
 # Runge-Kutta
@@ -88,7 +89,17 @@ process.ldigi = cms.Path(process.RawToDigi)
 
 # Local reco
 process.load("RecoLocalTracker.Configuration.RecoLocalTracker_cff")
-process.lreco = cms.Path(process.trackerlocalreco)
+
+process.load("RecoLocalCalo.Configuration.RecoLocalCalo_cff")
+process.load("RecoJets.Configuration.CaloTowersRec_cff")
+process.load("RecoLocalCalo.Configuration.hcalGlobalReco_cff")
+
+process.load("TrackingTools.TrackAssociator.DetIdAssociatorESProducer_cff")
+process.load("RecoJets.JetAssociationProducers.trackExtrapolator_cfi")
+process.trackExtrapolator.trackSrc = cms.InputTag("allTracks")
+
+process.lreco = cms.Path(process.trackerlocalreco
+                       * process.calolocalreco)
 
 # Minimum bias tracking and related
 process.load("RecoVertex.BeamSpotProducer.BeamSpot_cfi")
@@ -110,7 +121,10 @@ process.greco = cms.Path(process.offlineBeamSpot
                        * process.MeasurementTrackerEvent
                        * process.siPixelClusterShapeCache
                        * process.minBiasTracking
-                       * process.allVertices)
+                       * process.allVertices
+                       * process.trackExtrapolator
+                       * process.hcalGlobalRecoSequence
+                       * process.caloTowersRec)
 
 # Postprocessing, association
 process.load("SimTracker.TrackerHitAssociation.clusterTpAssociationProducer_cfi")

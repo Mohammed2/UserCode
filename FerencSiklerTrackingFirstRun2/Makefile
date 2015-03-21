@@ -7,6 +7,3 @@ all ::
 run ::
 	cd test ; cmsRun simuMinBiasReco.py >& /dev/null ; \
 	 mv hadronTree.root hadronTree_minBias.root 
-#	cd test ; cmsRun simuDefaultReco.py >& /dev/null ; \
-#  	 mv hadronTree.root hadronTree_default.root 
-

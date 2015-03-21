@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process("PlotMinBiasReconstruction")
+process = cms.Process("MinBiasReconstruction")
 
 process.load("Configuration.StandardSequences.Services_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
@@ -15,7 +15,7 @@ process.load("FWCore.MessageLogger.MessageLogger_cfi")
 
 process.MessageLogger = cms.Service("MessageLogger",
     categories = cms.untracked.vstring(
-      'MinBiasTracking', 'pixel3Vertices', 'NewVertices', 'UDstProducer',' ClusterShapeHitFilter', 'TrackCleaner', 'TrajectFilter', 'ClusterShapeTrackFilter', 'TrackProducer', 'TrackFitters'
+      'pixel3Vertices', 'NewVertices', 'UDstProducer'
     ),
     debugModules = cms.untracked.vstring('*'),
     cerr = cms.untracked.PSet(
@@ -25,7 +25,7 @@ process.MessageLogger = cms.Service("MessageLogger",
         ),
         FwkReport = cms.untracked.PSet(
             optionalPSet = cms.untracked.bool(True),
-            reportEvery = cms.untracked.int32(1),
+            reportEvery = cms.untracked.int32(10),
             limit = cms.untracked.int32(10000000)
         )
     ),
@@ -40,9 +40,10 @@ process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-       'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
-       'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
-       'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
+       'file:///afs/cern.ch/user/a/azsigmon/public/EventContent/MinBias_TuneMonash13_13TeV_pythia8_step2_FEVTDEBUG.root'
+#      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
+#      'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
+#      'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
     ),
     inputCommands = cms.untracked.vstring(
        'keep *',
@@ -69,13 +70,6 @@ process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
 )
 
 ###############################################################################
-# Event plotter
-process.plotEvent = cms.EDAnalyzer("HadronPlotter",
-    hasSimInfo             = cms.bool(True),
-    trackProducer          = cms.string('allTracks')
-)
-
-###############################################################################
 # Paths
 
 # Mixing
@@ -83,7 +77,27 @@ process.load("SimGeneral.MixingModule.mixNoPU_cfi")
 from SimGeneral.MixingModule.digitizers_cfi import *
 process.mix.digitizers = cms.PSet(theDigitizersValid)
 process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.001)
-process.mix.playback = cms.untracked.bool(True)
+# process.mix.playback = cms.untracked.bool(True)
+process.mix.playback = cms.untracked.bool(False)
+
+# FIXME
+process.mix.input = cms.SecSource("PoolSource",
+    # Poissonian, mu = 0.2
+    nbPileupEvents = cms.PSet(
+        probFunctionVariable = cms.vint32(0,1,2,3),
+        probValue = cms.vdouble(0.90333,0.09033,0.00603,0.00031),
+        histoFileName = cms.untracked.string('histoProbFunction.root')
+    ),
+    type = cms.string('probFunction'),
+#    sequential = cms.untracked.bool(False),
+   sequential = cms.untracked.bool(True),
+    fileNames = cms.untracked.vstring(
+      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/0E642422-FA9D-E411-977E-0026189438CC.root',
+      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/187A463C-F39D-E411-B1E7-003048FFD7C2.root',
+      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/24EAE528-FA9D-E411-A9A6-0025905A608C.root',
+      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/2A936361-FE9D-E411-B9ED-0025905A608E.root'
+    )
+)
 
 # Runge-Kutta
 from TrackingTools.TrackFitters.RungeKuttaFitters_cff import *
@@ -95,7 +109,17 @@ process.ldigi = cms.Path(process.RawToDigi)
 
 # Local reco
 process.load("RecoLocalTracker.Configuration.RecoLocalTracker_cff")
-process.lreco = cms.Path(process.trackerlocalreco)
+
+process.load("RecoLocalCalo.Configuration.RecoLocalCalo_cff")
+process.load("RecoJets.Configuration.CaloTowersRec_cff")
+process.load("RecoLocalCalo.Configuration.hcalGlobalReco_cff")
+
+process.load("TrackingTools.TrackAssociator.DetIdAssociatorESProducer_cff")
+process.load("RecoJets.JetAssociationProducers.trackExtrapolator_cfi")
+process.trackExtrapolator.trackSrc = cms.InputTag("allTracks")
+
+process.lreco = cms.Path(process.trackerlocalreco
+                       * process.calolocalreco)
 
 # Minimum bias tracking and related
 process.load("RecoVertex.BeamSpotProducer.BeamSpot_cfi")
@@ -117,7 +141,10 @@ process.greco = cms.Path(process.offlineBeamSpot
                        * process.MeasurementTrackerEvent
                        * process.siPixelClusterShapeCache
                        * process.minBiasTracking
-                       * process.allVertices)
+                       * process.allVertices
+                       * process.trackExtrapolator
+                       * process.hcalGlobalRecoSequence
+                       * process.caloTowersRec)
 
 # Postprocessing, association
 process.load("SimTracker.TrackerHitAssociation.clusterTpAssociationProducer_cfi")
@@ -136,8 +163,7 @@ process.quickTrackAssociatorByHits.ThreeHitTracksAreSpecial = cms.bool(False)
 
 process.postp = cms.Path(process.tpClusterProducer
                        * process.tpRecoAssocGeneralTracks
-                       * process.produceMicroDst
-                       * process.plotEvent)
+                       * process.produceMicroDst)
 
 ###############################################################################
 # Global tag

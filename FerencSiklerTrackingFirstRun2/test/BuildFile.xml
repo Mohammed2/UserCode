@@ -6,6 +6,7 @@
 <library file="UDstProducer.cc" name="UDstProducer">
   <use name="DataFormats/L1GlobalTrigger"/>
   <use name="L1Trigger/GlobalTriggerAnalyzer"/>
+  <use name="RecoVertex/KalmanVertexFit"/>
   <flags EDM_PLUGIN="1"/>
 </library>
 <library file="HadronPlotter.cc" name="HadronPlotter">

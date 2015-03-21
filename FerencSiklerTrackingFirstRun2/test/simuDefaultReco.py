@@ -69,7 +69,7 @@ process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
 process.load("SimGeneral.MixingModule.mixNoPU_cfi")
 from SimGeneral.MixingModule.digitizers_cfi import *
 process.mix.digitizers = cms.PSet(theDigitizersValid)
-process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.01)
+process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.001)
 process.mix.playback = cms.untracked.bool(True)
 
 process.gsimu = cms.Path(process.mix)
