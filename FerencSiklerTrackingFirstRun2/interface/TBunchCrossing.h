@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 
+class TCaloTower;
 class TVertex;
 
 class TBunchCrossing : public TObject
@@ -13,17 +14,19 @@ class TBunchCrossing : public TObject
   TBunchCrossing();
   virtual ~TBunchCrossing();
 
-  int processId;
-
   int runNumber;
   int lumiSection;
   int bxNumber;
+
+  short int processId;
+  float xi;
 
   // triggers
   std::vector<std::string> triggerNames;
 
   // HF
-  std::pair<short int,short int> hfTowers;
+//  std::pair<short int,short int> hfTowers;
+  std::vector<TCaloTower> hfTowers;
 
   // vertices
   std::vector<TVertex> simVertices;

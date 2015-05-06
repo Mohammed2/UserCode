@@ -6,7 +6,7 @@ newVertices = cms.EDProducer("NewVertexProducer",
     d0Max    = cms.double(0.3),  # cm
     nSigma   = cms.double(3.0),  # dt < nSigma * sigma, transverse impact
     Method   = cms.int32(0),     # 0 = fPNN, 1 = KMeans, 2 = GaussMix
-    dMax     = cms.double(40.0), # for fPNN, was 8.0, 40,  FIXME
+    dMax     = cms.double(40.0), # for fPNN
     ProbMin  = cms.double(1e-3), # for kMeans and GaussMix 
-    TrackMin = cms.int32(3)      # minimum number of tracks for a vertex, was 2
+    TrackMin = cms.int32(3)      # minimum number of tracks for a vertex
 )

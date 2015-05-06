@@ -6,8 +6,10 @@ process.load("Configuration.StandardSequences.Services_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.load("Configuration.StandardSequences.GeometryDB_cff")
 process.load("Configuration.StandardSequences.MagneticField_cff")
-process.load("Configuration.StandardSequences.RawToDigi_cff")
 process.load("Configuration.StandardSequences.Digi_cff")
+process.load('Configuration.StandardSequences.DigiToRaw_cff')
+process.load('Configuration.StandardSequences.SimL1Emulator_cff')
+process.load("Configuration.StandardSequences.RawToDigi_cff")
 
 ###############################################################################
 # Message logger
@@ -40,10 +42,7 @@ process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-       'file:///afs/cern.ch/user/a/azsigmon/public/EventContent/MinBias_TuneMonash13_13TeV_pythia8_step2_FEVTDEBUG.root'
-#      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
-#      'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
-#      'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
+       'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root'
     ),
     inputCommands = cms.untracked.vstring(
        'keep *',
@@ -52,7 +51,7 @@ process.source = cms.Source("PoolSource",
 )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(10)
 )
 
 ###############################################################################
@@ -80,22 +79,26 @@ process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.001)
 # process.mix.playback = cms.untracked.bool(True)
 process.mix.playback = cms.untracked.bool(False)
 
-# FIXME
 process.mix.input = cms.SecSource("PoolSource",
-    # Poissonian, mu = 0.2
+    # Poissonian, mu = 0.5
     nbPileupEvents = cms.PSet(
-        probFunctionVariable = cms.vint32(0,1,2,3),
-        probValue = cms.vdouble(0.90333,0.09033,0.00603,0.00031),
+        probFunctionVariable = cms.vint32(0,1,2,3,4),
+        probValue = cms.vdouble(0.7707,0.1927,0.0321,0.0041,0.0004),
         histoFileName = cms.untracked.string('histoProbFunction.root')
     ),
     type = cms.string('probFunction'),
-#    sequential = cms.untracked.bool(False),
-   sequential = cms.untracked.bool(True),
+    seed = cms.int32(1234567), 
+    sequential = cms.untracked.bool(False),
     fileNames = cms.untracked.vstring(
-      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/0E642422-FA9D-E411-977E-0026189438CC.root',
-      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/187A463C-F39D-E411-B1E7-003048FFD7C2.root',
-      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/24EAE528-FA9D-E411-A9A6-0025905A608C.root',
-      'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/2A936361-FE9D-E411-B9ED-0025905A608E.root'
+#      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root'
+       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/0E642422-FA9D-E411-977E-0026189438CC.root',
+       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/187A463C-F39D-E411-B1E7-003048FFD7C2.root',
+       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/24EAE528-FA9D-E411-A9A6-0025905A608C.root',
+       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/2A936361-FE9D-E411-B9ED-0025905A608E.root'
+    ),
+    inputCommands = cms.untracked.vstring(
+       'keep *',
+       'drop *_mix_MergedTrackTruth_HLT'
     )
 )
 
@@ -104,7 +107,10 @@ from TrackingTools.TrackFitters.RungeKuttaFitters_cff import *
 KFFittingSmootherWithOutliersRejectionAndRK.EstimateCut = cms.double(50.)
 KFFittingSmootherWithOutliersRejectionAndRK.LogPixelProbabilityCut = cms.double(-16.)
 
-process.gsimu = cms.Path(process.mix)
+process.gsimu = cms.Path(process.mix
+                       * process.pdigi
+                       * process.SimL1Emulator
+                       * process.DigiToRaw)
 process.ldigi = cms.Path(process.RawToDigi)
 
 # Local reco

@@ -15,6 +15,8 @@ class TVertex : public TObject
   std::vector<TTrack> tracks;
 
   float z;
+  float r;
+
   short int processId;  
 
   ClassDef(TVertex,1)

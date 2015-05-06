@@ -1,4 +1,5 @@
 #include "../interface/TBunchCrossing.h"
+#include "../interface/TCaloTower.h"
 #include "../interface/TVertex.h"
 #include "../interface/TTrack.h"
 
@@ -12,6 +13,7 @@
 #pragma link off all functions;
 
 #pragma link C++ class TBunchCrossing+;
+#pragma link C++ class TCaloTower+;
 #pragma link C++ class TVertex+;
 #pragma link C++ class TTrack+;
 

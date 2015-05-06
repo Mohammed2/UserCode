@@ -40,7 +40,8 @@ process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-       'file:///afs/cern.ch/user/a/azsigmon/public/EventContent/MinBias_TuneMonash13_13TeV_pythia8_step2_FEVTDEBUG.root'
+	'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root'
+#      'file:///afs/cern.ch/user/a/azsigmon/public/EventContent/MinBias_TuneMonash13_13TeV_pythia8_step2_FEVTDEBUG.root'
 #      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
 #      'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
 #      'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
@@ -52,7 +53,7 @@ process.source = cms.Source("PoolSource",
 )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(1000)
 )
 
 ###############################################################################

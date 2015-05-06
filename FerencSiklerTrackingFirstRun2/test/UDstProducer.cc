@@ -38,12 +38,15 @@
 
 // My classes
 #include "../interface/TBunchCrossing.h"
+#include "../interface/TCaloTower.h"
 #include "../interface/TVertex.h"
 #include "../interface/TTrack.h"
 
 #include "TROOT.h"
 #include "TFile.h"
 #include "TTree.h"
+
+#include "CLHEP/Vector/LorentzVector.h"
 
 #include <fstream>
 
@@ -67,7 +70,7 @@ class UDstProducer : public edm::EDAnalyzer
 
  private:
   bool isRelevantVertex(const TrackingVertex & vertex);
-  bool isPrimary(const TrackingParticleRef & simTrack);
+  bool isStable(const TrackingParticleRef & simTrack);
   bool isPrimary(const Track & recTrack, const Vertex & vertex);
   bool isPrimary(const edm::RefToBase<Track> & recTrack);
 
@@ -147,15 +150,14 @@ void UDstProducer::beginRun(edm::Run const & r, edm::EventSetup const & es)
 /*****************************************************************************/
 bool UDstProducer::isRelevantVertex(const TrackingVertex & vertex)
 {
-  return (vertex.position().rho() < 5 &&
+  return (vertex.position().rho() < 10 &&
      fabs(vertex.position().z())  < 50);
 }
 
 
 /*****************************************************************************/
-bool UDstProducer::isPrimary(const TrackingParticleRef & simTrack)
+bool UDstProducer::isStable(const TrackingParticleRef & simTrack)
 {
-//  return (simTrack->status() >= 0); // FIXME
   bool isStable =
     (abs(simTrack->pdgId()) ==   11 || // electron
      abs(simTrack->pdgId()) ==   13 || // muon
@@ -163,7 +165,7 @@ bool UDstProducer::isPrimary(const TrackingParticleRef & simTrack)
      abs(simTrack->pdgId()) ==  321 || // kaon
      abs(simTrack->pdgId()) == 2212);  // proton
 
-  return (isStable && simTrack->parentVertex()->nSourceTracks() == 0);
+  return isStable;
 }
 
 /*****************************************************************************/
@@ -224,9 +226,18 @@ float UDstProducer::refitPtWithVertex
 }
 
 /*****************************************************************************/
+bool pairCompare(const pair<double, HepMC::FourVector> a,
+                 const pair<double, HepMC::FourVector> b)
+{
+  return a.first < b.first;
+}
+
+/*****************************************************************************/
 void UDstProducer::processSimTracks(const edm::Event& ev, bool associate)
 {
   int proc = 0;
+  float xi = 0.;
+
   SimToRecoCollection simToRec;
 
   if(!associate)
@@ -235,9 +246,67 @@ void UDstProducer::processSimTracks(const edm::Event& ev, bool associate)
     edm::Handle<edm::HepMCProduct> hepEv;
     ev.getByLabel("generator", hepEv);
     proc = hepEv->GetEvent()->signal_process_id();
-
-    bunchCrossing->processId = proc;
     LogTrace("UDstProducer") << " [UDstProducer] processId = " << proc;
+
+    bunchCrossing->processId = proc; // in any case, if there is no simvertex
+
+    // Calculate xi
+    vector<pair<double,HepMC::FourVector> > particles;
+    for(HepMC::GenEvent::particle_const_iterator
+             p = hepEv->GetEvent()->particles_begin();
+             p!= hepEv->GetEvent()->particles_end(); p++)
+    if((*p)->status() == 1) // final state (not decayed or fragmented)
+    {
+      double e  = (*p)->momentum().e();
+      double pz = (*p)->momentum().pz();
+
+      double y = 1./2*log((e+pz)/(e-pz));
+      particles.push_back(pair<double,HepMC::FourVector>
+                          (y, (*p)->momentum()) );
+    }
+
+    // sort in eta
+    sort(particles.begin(), particles.end(), pairCompare);
+
+    // find largest gap
+    double detamax = 0.;
+    vector<pair<double,HepMC::FourVector> >::const_iterator plast;
+    for(vector<pair<double,HepMC::FourVector> >::const_iterator
+          p = particles.begin(); p!= particles.end() - 1; p++)
+    {
+      double deta = (p+1)->first - p->first;
+      if(deta > detamax)
+      { detamax = deta; plast = p; }
+    }
+
+    // sum fourvectors
+    HepMC::FourVector sum_low, sum_hig;
+    for(vector<pair<double,HepMC::FourVector> >::iterator
+          p = particles.begin(); p!= particles.end(); p++)
+      if(p <= plast)
+      {
+        sum_low.setPx(sum_low.px() + p->second.px());
+        sum_low.setPy(sum_low.py() + p->second.py());
+        sum_low.setPz(sum_low.pz() + p->second.pz());
+        sum_low.setE (sum_low.e()  + p->second.e() );
+      }
+      else
+      {
+        sum_hig.setPx(sum_hig.px() + p->second.px());
+        sum_hig.setPy(sum_hig.py() + p->second.py());
+        sum_hig.setPz(sum_hig.pz() + p->second.pz());
+        sum_hig.setE (sum_hig.e()  + p->second.e() );
+      }
+
+    // calculate diffractive masses
+    double m_low = sum_low.m();
+    double m_hig = sum_hig.m();
+
+    double Mx = (m_low > m_hig ? m_low : m_hig);
+
+    xi = Mx*Mx / (13e+3*13e+3); // 13 TeV
+
+    bunchCrossing->xi = xi; // in any case, if there is no simvertex
   }
   else
   {
@@ -262,10 +331,23 @@ void UDstProducer::processSimTracks(const edm::Event& ev, bool associate)
 
     if(!associate)
     {
-      if(vertex == vertices->begin()) simVertex.processId = proc;
-                                 else simVertex.processId = 0;
+      if(vertex->g4Vertices_begin()->vertexId() == 0)
+      {
+        if(vertex == vertices->begin())
+          simVertex.processId = proc; // signal primary
+        else
+          simVertex.processId = -100; // pile-up primary
+      }
+      else
+      {
+        if(vertex->nSourceTracks() == 0)
+          simVertex.processId = -200; // primary-like from strong decays (K*)
+        else
+          simVertex.processId = 0;    // secondary, not wanted
+      }
 
       simVertex.z = vertex->position().z();
+      simVertex.r = vertex->position().rho();
     }
 
     // Go through simtracks
@@ -276,7 +358,7 @@ void UDstProducer::processSimTracks(const edm::Event& ev, bool associate)
     {
       TTrack s;
 
-      s.isPrimary = isPrimary(*simTrack);
+      s.isPrimary = isStable(*simTrack);
 
       // sim
       s.pdgId    = (*simTrack)->pdgId();
@@ -426,6 +508,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev, bool associate)
     if(!associate)
     {
       recVertex.z = vertex->position().z();
+      recVertex.r = vertex->position().rho();
     }
 
     // Go through rectracks
@@ -438,7 +521,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev, bool associate)
 
       r.isPrimary  = isPrimary(**recTrack, *vertex);
 
-      if(r.isPrimary) // FIXME
+      if(r.isPrimary) // write out primaries only!
       {
 
       switch((*recTrack)->algo())
@@ -452,8 +535,7 @@ void UDstProducer::processRecTracks(const edm::Event& ev, bool associate)
       r.charge = (*recTrack)->charge();
       r.eta    = (*recTrack)->eta();
 
-//    r.pt     = (*recTrack)->pt();
-      r.pt = refitPtWithVertex(**recTrack, *vertex);
+      r.pt     = refitPtWithVertex(**recTrack, *vertex);
 
       r.phi    = (*recTrack)->phi();
 
@@ -517,21 +599,19 @@ void UDstProducer::processRecTracks(const edm::Event& ev, bool associate)
 void UDstProducer::processVertices(const edm::Event& ev)
 {
   // Process recvertices, recTracks
-//  if(bunchCrossing->hfTowers.first  > 0 && FIXME
-//     bunchCrossing->hfTowers.second > 0) 
   if(hasSimInfo)
   {
-  simTrackMap.clear();
-  recTrackMap.clear();
-  processSimTracks(ev, false);
+    simTrackMap.clear();
+    recTrackMap.clear();
+    processSimTracks(ev, false);
   }
 
   processRecTracks(ev, false);
 
   if(hasSimInfo)
   {
-  processSimTracks(ev, true); // add associations
-  processRecTracks(ev, true); // add associations
+    processSimTracks(ev, true); // add associations
+    processRecTracks(ev, true); // add associations
   }
 }
 
@@ -563,9 +643,6 @@ void UDstProducer::processHadronForward(const edm::Event& ev)
   edm::Handle<CaloTowerCollection> towers;
   ev.getByLabel("towerMaker",      towers);
 
-  short int posTowers = 0;
-  short int negTowers = 0;
-
   for(CaloTowerCollection::const_iterator cal = towers->begin();
                                           cal!= towers->end(); ++cal)
   {
@@ -577,20 +654,15 @@ void UDstProducer::processHadronForward(const edm::Event& ev)
         if((HcalSubdetector) id.subdetId() == HcalForward)
         if(cal->energy() > 3) // energy threshold of 3 GeV
         {
-          if(cal->eta() <  0) negTowers++;
-          if(cal->eta() >  0) posTowers++;
+          TCaloTower hfTower;
+          hfTower.eta    = cal->eta();
+          hfTower.energy = cal->energy();
+
+          bunchCrossing->hfTowers.push_back(hfTower);
         }
       }
     }
   }
-
-  bunchCrossing->hfTowers.first  = negTowers;
-  bunchCrossing->hfTowers.second = posTowers;
-
-  LogTrace("UDstProducer")
-      << " [UDstProducer] hfTowers :"
-      << " -" << bunchCrossing->hfTowers.first
-      << " +" << bunchCrossing->hfTowers.second;
 }
 
 /*****************************************************************************/
@@ -610,13 +682,13 @@ void UDstProducer::processEventRelated(const edm::Event& ev)
 void UDstProducer::analyze
   (const edm::Event& ev, const edm::EventSetup& es)
 {
-  // Analyze FIXME
+  // Analyze
   processTrigger(ev);
   processHadronForward(ev);
   processEventRelated(ev);
   processVertices(ev);
 
-   // Fill tree
+  // Fill tree
   tree->Fill();
   bunchCrossing->Clear();
 }

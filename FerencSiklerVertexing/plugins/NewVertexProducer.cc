@@ -274,7 +274,8 @@ void NewVertexProducer::produce
       {
         // enough tracks?
         if(vertex->second.size() >= theTrackMin ||
-                recTracks.size() <  theTrackMin)
+           vertex->second.size() >= recTracks.size() - 2)
+//           vertex->second.size() == recTracks.size())
           vertices->push_back(ver); // store
       }
     }
