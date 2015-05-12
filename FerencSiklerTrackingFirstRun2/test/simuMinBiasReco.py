@@ -6,8 +6,6 @@ process.load("Configuration.StandardSequences.Services_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.load("Configuration.StandardSequences.GeometryDB_cff")
 process.load("Configuration.StandardSequences.MagneticField_cff")
-process.load("Configuration.StandardSequences.RawToDigi_cff")
-process.load("Configuration.StandardSequences.Digi_cff")
 
 ###############################################################################
 # Message logger
@@ -40,11 +38,7 @@ process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-	'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root'
-#      'file:///afs/cern.ch/user/a/azsigmon/public/EventContent/MinBias_TuneMonash13_13TeV_pythia8_step2_FEVTDEBUG.root'
-#      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root',
-#      'file:///tmp/sikler/8E5AC8DC-FC9D-E411-AE20-003048FFD770.root',
-#      'file:///tmp/sikler/9805E1CF-F59D-E411-B3F1-003048FFCB9E.root',
+       'file:///tmp/sikler/step3_RAW2DIGI_L1Reco_RECO_1.root'
     ),
     inputCommands = cms.untracked.vstring(
        'keep *',
@@ -53,7 +47,7 @@ process.source = cms.Source("PoolSource",
 )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(100)
 )
 
 ###############################################################################
@@ -80,12 +74,17 @@ process.mix.digitizers = cms.PSet(theDigitizersValid)
 process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.001)
 process.mix.playback = cms.untracked.bool(True)
 
+process.gsimu = cms.Path(process.mix)
+
 # Runge-Kutta
 from TrackingTools.TrackFitters.RungeKuttaFitters_cff import *
 KFFittingSmootherWithOutliersRejectionAndRK.EstimateCut = cms.double(50.)
 KFFittingSmootherWithOutliersRejectionAndRK.LogPixelProbabilityCut = cms.double(-16.)
 
-process.gsimu = cms.Path(process.mix)
+# Digi
+process.load("Configuration.StandardSequences.RawToDigi_cff")
+process.load("Configuration.StandardSequences.Digi_cff")
+
 process.ldigi = cms.Path(process.RawToDigi)
 
 # Local reco
@@ -136,19 +135,22 @@ process.tpRecoAssocGeneralTracks = process.trackingParticleRecoTrackAsssociation
 process.tpRecoAssocGeneralTracks.label_tr = cms.InputTag("allTracks")
 process.tpRecoAssocGeneralTracks.label_tp = cms.InputTag("mix","")
 
-process.load("SimTracker.TrackAssociation.quickTrackAssociatorByHits_cfi")
+process.load("SimTracker.TrackAssociatorProducers.quickTrackAssociatorByHits_cfi")
 process.quickTrackAssociatorByHits.SimToRecoDenominator = cms.string('reco')
 process.quickTrackAssociatorByHits.Purity_SimToReco = cms.double(0.50) #was 0.75
 process.quickTrackAssociatorByHits.Cut_RecoToSim    = cms.double(0.50) #was 0.75
 process.quickTrackAssociatorByHits.ThreeHitTracksAreSpecial = cms.bool(False)
 
 process.postp = cms.Path(process.tpClusterProducer
+                       * process.quickTrackAssociatorByHits
                        * process.tpRecoAssocGeneralTracks
                        * process.produceMicroDst)
 
 ###############################################################################
 # Global tag
-process.GlobalTag.globaltag = 'MCRUN2_73_V9::All'
+process.GlobalTag.globaltag = 'MCRUN2_74_V6B::All'
+
+process.siPixelDigis.UseQualityInfo = cms.bool(True)
 
 ###############################################################################
 # Schedule
@@ -157,3 +159,8 @@ process.schedule = cms.Schedule(process.gsimu,
                                 process.lreco,
                                 process.greco,
                                 process.postp)
+
+##
+from SLHCUpgradeSimulations.Configuration.postLS1Customs import customisePostLS1
+process = customisePostLS1(process)
+

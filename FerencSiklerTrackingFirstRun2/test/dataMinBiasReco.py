@@ -13,19 +13,24 @@ process.load("FWCore.MessageLogger.MessageLogger_cfi")
 
 process.MessageLogger = cms.Service("MessageLogger",
     categories = cms.untracked.vstring(
-      'MinBiasTracking', 'pixel3Vertices', 'NewVertices'
+      'pixel3Vertices', 'NewVertices', 'UDstProducer'
     ),
     debugModules = cms.untracked.vstring('*'),
     cerr = cms.untracked.PSet(
         threshold = cms.untracked.string('DEBUG'),
         DEBUG = cms.untracked.PSet(
-            limit = cms.untracked.int32(1000000)
+            limit = cms.untracked.int32(0)
+        ),
+        FwkReport = cms.untracked.PSet(
+            optionalPSet = cms.untracked.bool(True),
+            reportEvery = cms.untracked.int32(10),
+            limit = cms.untracked.int32(10000000)
         )
     ),
     destinations = cms.untracked.vstring('cerr'),
+    suppressWarning = cms.untracked.vstring('siStripZeroSuppression'),
     suppressError   = cms.untracked.vstring('globalPrimTracks','globalSecoTracks','globalTertTracks')
 )
-
  
 ###############################################################################
 # Source
@@ -33,9 +38,8 @@ process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-      'file:///tmp/sikler/B232391B-0B9E-E411-A3AC-0025905A6136.root'
+       'file:///tmp/sikler/step3_RAW2DIGI_L1Reco_RECO_1.root'
     )
-  # fileNames = '/store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-RECO/MCRUN2_73_V9_postLS1beamspot-v1/00000/B232391B-0B9E-E411-A3AC-0025905A6136.root'
 )
 
 process.maxEvents = cms.untracked.PSet(
@@ -59,10 +63,30 @@ process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
 ###############################################################################
 # Paths
 
+# Runge-Kutta
+from TrackingTools.TrackFitters.RungeKuttaFitters_cff import *
+KFFittingSmootherWithOutliersRejectionAndRK.EstimateCut = cms.double(50.)
+KFFittingSmootherWithOutliersRejectionAndRK.LogPixelProbabilityCut = cms.double(-16.)
+
+# Digi
+process.load("Configuration.StandardSequences.RawToDigi_cff")
+process.load("Configuration.StandardSequences.Digi_cff")
+
+process.ldigi = cms.Path(process.RawToDigi)
+
+# Local reco
 process.load("RecoLocalTracker.Configuration.RecoLocalTracker_cff")
 
-process.lreco = cms.Path(process.siPixelRecHits
-                       * process.siStripMatchedRecHits)
+process.load("RecoLocalCalo.Configuration.RecoLocalCalo_cff")
+process.load("RecoJets.Configuration.CaloTowersRec_cff")
+process.load("RecoLocalCalo.Configuration.hcalGlobalReco_cff")
+
+process.load("TrackingTools.TrackAssociator.DetIdAssociatorESProducer_cff")
+process.load("RecoJets.JetAssociationProducers.trackExtrapolator_cfi")
+process.trackExtrapolator.trackSrc = cms.InputTag("allTracks")
+
+process.lreco = cms.Path(process.trackerlocalreco
+                       * process.calolocalreco)
 
 # Minimum bias tracking and related
 process.load("RecoVertex.BeamSpotProducer.BeamSpot_cfi")
@@ -72,30 +96,40 @@ process.load("RecoTracker.MeasurementDet.MeasurementTrackerEventProducer_cfi")
 process.load("RecoPixelVertexing.PixelLowPtUtilities.siPixelClusterShapeCache_cfi")
 process.load("RecoPixelVertexing.PixelLowPtUtilities.MinBiasTracking_cff")
 
-# Runge-Kutta
-from TrackingTools.TrackFitters.RungeKuttaFitters_cff import *
-KFFittingSmootherWithOutliersRejectionAndRK.EstimateCut = cms.double(50.)
-KFFittingSmootherWithOutliersRejectionAndRK.LogPixelProbabilityCut = cms.double(-16.)
-
 # Provide new shape files (all hits for pixels, only clear hits for strips)
 from RecoPixelVertexing.PixelLowPtUtilities.ClusterShapeHitFilterESProducer_cfi import *
 ClusterShapeHitFilterESProducer.PixelShapeFile = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/pixelShape_simHiteq1.par')
 ClusterShapeHitFilterESProducer.StripShapeFile = cms.string('RecoPixelVertexing/PixelLowPtUtilities/data/stripShape_simHiteq1.par')
 
-process.greco = cms.Path(process.siPixelClusterShapeCache
+# Global reco
+process.greco = cms.Path(process.offlineBeamSpot
+                       * process.siPixelClusters
+                       * process.siPixelRecHits
                        * process.MeasurementTrackerEvent
+                       * process.siPixelClusterShapeCache
                        * process.minBiasTracking
-                       * process.allVertices)
+                       * process.allVertices
+                       * process.trackExtrapolator
+                       * process.hcalGlobalRecoSequence
+                       * process.caloTowersRec)
 
+# Postprocessing
 process.postp = cms.Path(process.produceMicroDst)
 
 ###############################################################################
 # Global tag
-process.GlobalTag.globaltag = 'MCRUN2_73_V9::All'
+process.GlobalTag.globaltag = 'MCRUN2_74_V6B::All'
+
+process.siPixelDigis.UseQualityInfo = cms.bool(True)
 
 ###############################################################################
 # Schedule
-process.schedule = cms.Schedule(process.lreco,
+process.schedule = cms.Schedule(process.ldigi,
+                                process.lreco,
                                 process.greco,
                                 process.postp)
+
+##
+from SLHCUpgradeSimulations.Configuration.postLS1Customs import customisePostLS1
+process = customisePostLS1(process)
 

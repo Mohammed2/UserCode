@@ -85,18 +85,21 @@ process.tpRecoAssocGeneralTracks = process.trackingParticleRecoTrackAsssociation
 process.tpRecoAssocGeneralTracks.label_tr = cms.InputTag("generalTracks")
 process.tpRecoAssocGeneralTracks.label_tp = cms.InputTag("mix","")
 
-process.load("SimTracker.TrackAssociation.quickTrackAssociatorByHits_cfi")
+process.load("SimTracker.TrackAssociatorProducers.quickTrackAssociatorByHits_cfi")
 process.quickTrackAssociatorByHits.SimToRecoDenominator = cms.string('reco')
 process.quickTrackAssociatorByHits.Cut_RecoToSim    = cms.double(0.50) #was 0.75
 process.quickTrackAssociatorByHits.Purity_SimToReco = cms.double(0.50) #was 0.75
 
 process.postp = cms.Path(process.tpClusterProducer
+                       * process.quickTrackAssociatorByHits
                        * process.tpRecoAssocGeneralTracks
                        * process.produceMicroDst)
 
 ###############################################################################
 # Global tag
-process.GlobalTag.globaltag = 'MCRUN2_73_V9::All'
+process.GlobalTag.globaltag = 'MCRUN2_74_V6B::All'
+
+process.siPixelDigis.UseQualityInfo = cms.bool(True)
 
 ###############################################################################
 # Schedule

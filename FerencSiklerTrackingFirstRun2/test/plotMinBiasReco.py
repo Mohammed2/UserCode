@@ -141,7 +141,7 @@ process.postp = cms.Path(process.tpClusterProducer
 
 ###############################################################################
 # Global tag
-process.GlobalTag.globaltag = 'MCRUN2_73_V9::All'
+process.GlobalTag.globaltag = 'MCRUN2_74_V6B::All'
 
 ###############################################################################
 # Schedule

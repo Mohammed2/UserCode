@@ -1,15 +1,11 @@
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process("MinBiasReconstruction")
+process = cms.Process("DataReconstruction")
 
 process.load("Configuration.StandardSequences.Services_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.load("Configuration.StandardSequences.GeometryDB_cff")
 process.load("Configuration.StandardSequences.MagneticField_cff")
-process.load("Configuration.StandardSequences.Digi_cff")
-process.load('Configuration.StandardSequences.DigiToRaw_cff')
-process.load('Configuration.StandardSequences.SimL1Emulator_cff')
-process.load("Configuration.StandardSequences.RawToDigi_cff")
 
 ###############################################################################
 # Message logger
@@ -33,25 +29,23 @@ process.MessageLogger = cms.Service("MessageLogger",
     ),
     destinations = cms.untracked.vstring('cerr'),
     suppressWarning = cms.untracked.vstring('siStripZeroSuppression'),
-    suppressError   = cms.untracked.vstring('globalPrimTracks','globalSecoTracks','globalTertTracks')
+    suppressError   = cms.untracked.vstring('globalPrimTracks','globalSecoTracks','globalTertTracks','caloStage1Digis','siStripDigis','gtEvmDigis')
 )
-
+ 
 ###############################################################################
 # Source
 process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string('noDuplicateCheck'),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-       'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root'
-    ),
-    inputCommands = cms.untracked.vstring(
-       'keep *',
-       'drop *_mix_MergedTrackTruth_HLT'
+       '/store/data/Commissioning2015/MinimumBias/RAW/v1/000/243/679/00000/D4B53161-5DF4-E411-BB7E-02163E011813.root'
+#       '/store/data/Commissioning2015/ZeroBias8/RAW/v1/000/243/679/00000/10D5C8F4-59F4-E411-84AC-02163E0129E9.root'
     )
 )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+#    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(100000)
 )
 
 ###############################################################################
@@ -63,7 +57,7 @@ process.allVertices.TrackCollection = 'allTracks'
 ###############################################################################
 # Produce udst
 process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
-    hasSimInfo  = cms.bool(True),
+    hasSimInfo  = cms.bool(False),
     allVertices = cms.string('allVertices'),
     allTracks   = cms.string('allTracks')
 )
@@ -71,46 +65,15 @@ process.produceMicroDst = cms.EDAnalyzer("UDstProducer",
 ###############################################################################
 # Paths
 
-# Mixing
-process.load("SimGeneral.MixingModule.mixNoPU_cfi")
-from SimGeneral.MixingModule.digitizers_cfi import *
-process.mix.digitizers = cms.PSet(theDigitizersValid)
-process.mix.digitizers.mergedtruth.select.ptMinTP = cms.double(0.001)
-# process.mix.playback = cms.untracked.bool(True)
-process.mix.playback = cms.untracked.bool(False)
-
-process.mix.input = cms.SecSource("PoolSource",
-    # Poissonian, mu = 0.5
-    nbPileupEvents = cms.PSet(
-        probFunctionVariable = cms.vint32(0,1,2,3,4),
-        probValue = cms.vdouble(0.7707,0.1927,0.0321,0.0041,0.0004),
-        histoFileName = cms.untracked.string('histoProbFunction.root')
-    ),
-    type = cms.string('probFunction'),
-    seed = cms.int32(1234567), 
-    sequential = cms.untracked.bool(False),
-    fileNames = cms.untracked.vstring(
-#      'file:///tmp/sikler/820E70BE-F39D-E411-80BA-0025905A6138.root'
-       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/0E642422-FA9D-E411-977E-0026189438CC.root',
-       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/187A463C-F39D-E411-B1E7-003048FFD7C2.root',
-       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/24EAE528-FA9D-E411-A9A6-0025905A608C.root',
-       'root://xrootd.unl.edu//store/relval/CMSSW_7_4_0_pre5/RelValMinBias_13/GEN-SIM-DIGI-RAW-HLTDEBUG/MCRUN2_73_V9_postLS1beamspot-v1/00000/2A936361-FE9D-E411-B9ED-0025905A608E.root'
-    ),
-    inputCommands = cms.untracked.vstring(
-       'keep *',
-       'drop *_mix_MergedTrackTruth_HLT'
-    )
-)
-
 # Runge-Kutta
 from TrackingTools.TrackFitters.RungeKuttaFitters_cff import *
 KFFittingSmootherWithOutliersRejectionAndRK.EstimateCut = cms.double(50.)
 KFFittingSmootherWithOutliersRejectionAndRK.LogPixelProbabilityCut = cms.double(-16.)
 
-process.gsimu = cms.Path(process.mix
-                       * process.pdigi
-                       * process.SimL1Emulator
-                       * process.DigiToRaw)
+# Digi
+process.load("Configuration.StandardSequences.RawToDigi_cff")
+process.load("Configuration.StandardSequences.Digi_cff")
+
 process.ldigi = cms.Path(process.RawToDigi)
 
 # Local reco
@@ -152,36 +115,18 @@ process.greco = cms.Path(process.offlineBeamSpot
                        * process.hcalGlobalRecoSequence
                        * process.caloTowersRec)
 
-# Postprocessing, association
-process.load("SimTracker.TrackerHitAssociation.clusterTpAssociationProducer_cfi")
-process.tpClusterProducer.trackingParticleSrc = cms.InputTag('mix', '')
-
-process.load("SimTracker.TrackAssociation.trackingParticleRecoTrackAsssociation_cfi")
-process.tpRecoAssocGeneralTracks = process.trackingParticleRecoTrackAsssociation.clone()
-process.tpRecoAssocGeneralTracks.label_tr = cms.InputTag("allTracks")
-process.tpRecoAssocGeneralTracks.label_tp = cms.InputTag("mix","")
-
-process.load("SimTracker.TrackAssociatorProducers.quickTrackAssociatorByHits_cfi")
-process.quickTrackAssociatorByHits.SimToRecoDenominator = cms.string('reco')
-process.quickTrackAssociatorByHits.Purity_SimToReco = cms.double(0.50) #was 0.75
-process.quickTrackAssociatorByHits.Cut_RecoToSim    = cms.double(0.50) #was 0.75
-process.quickTrackAssociatorByHits.ThreeHitTracksAreSpecial = cms.bool(False)
-
-process.postp = cms.Path(process.tpClusterProducer
-                       * process.quickTrackAssociatorByHits
-                       * process.tpRecoAssocGeneralTracks
-                       * process.produceMicroDst)
+# Postprocessing
+process.postp = cms.Path(process.produceMicroDst)
 
 ###############################################################################
 # Global tag
-process.GlobalTag.globaltag = 'MCRUN2_74_V6B::All'
+process.GlobalTag.globaltag = 'GR_P_V53::All'
 
 process.siPixelDigis.UseQualityInfo = cms.bool(True)
 
 ###############################################################################
 # Schedule
-process.schedule = cms.Schedule(process.gsimu,
-                                process.ldigi,
+process.schedule = cms.Schedule(process.ldigi,
                                 process.lreco,
                                 process.greco,
                                 process.postp)
